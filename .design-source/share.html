@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          "platinum": "#f5f5f7",
+          "surface": "#ffffff",
+          "surface-muted": "#fbfbfd",
+          "subtle-card": "#f7f7f9",
+          "border-subtle": "rgba(0, 0, 0, 0.06)",
+          "border-darker": "rgba(0, 0, 0, 0.12)",
+          "text-primary": "#1d1d1f",
+          "text-secondary": "#6e6e73",
+          "text-tertiary": "#86868b"
+        },
+        fontFamily: {
+          sans: ["Plus Jakarta Sans", "Inter", "-apple-system", "BlinkMacSystemFont", "sans-serif"],
+          mono: ["SF Mono", "Menlo", "Inter", "monospace"]
+        }
+      }
+    }
+  }
+</script>
+<style>
+    @layer base {
+      html, body {
+        width: 100%;
+        min-height: 100%;
+        margin: 0;
+        padding: 0;
+        background-color: #f5f5f7;
+      }
+      body {
+        overscroll-behavior-y: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .pb-safe {
+        padding-bottom: max(env(safe-area-inset-bottom, 0px), 1.25rem);
+      }
+      .pt-safe {
+        padding-top: max(env(safe-area-inset-top, 0px), 0.75rem);
+      }
+    }
+    ::-webkit-scrollbar { display: none; }
+    * { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+</style>
+</head>
+<body class="bg-[#f5f5f7] text-[#1d1d1f] font-sans flex flex-col min-h-screen relative selection:bg-black selection:text-white">
+<!-- Apple Subtle Glow Elements -->
+<div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+<div class="absolute -top-40 left-1/2 -translate-x-1/2 w-[480px] h-[480px] bg-black/[0.025] rounded-full blur-[140px]"></div>
+<div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-[360px] h-[360px] bg-black/[0.015] rounded-full blur-[100px]"></div>
+</div>
+<!-- Minimalist Apple Keynote Header -->
+<header class="sticky top-0 w-full z-40 pt-safe bg-[#f5f5f7]/80 backdrop-blur-xl border-b border-black/[0.05]">
+<div class="h-14 px-5 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<!-- Minimal Angler Hook & Monogram -->
+<div class="w-8 h-8 rounded-xl bg-white border border-black/10 shadow-[0_2px_6px_rgba(0,0,0,0.04)] flex items-center justify-center">
+<svg class="w-4 h-4 text-[#1d1d1f]" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewbox="0 0 24 24">
+<circle cx="12" cy="5" r="3"></circle>
+<path d="M12 8v8a4 4 0 0 1-8 0"></path>
+<path d="M4 14l2 2"></path>
+<path d="M19 12a7 7 0 0 0-7-7"></path>
+</svg>
+</div>
+<div class="flex flex-col">
+<span class="font-bold text-[13px] text-[#1d1d1f] tracking-tight leading-none font-mono uppercase">APEX ANGLER</span>
+<span class="text-[10px] text-[#86868b] tracking-wider leading-none mt-1">钓队出征战报 · 发布会</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="px-2.5 py-1 rounded-full border border-black/10 bg-white/80 text-[11px] font-mono font-medium text-[#6e6e73] shadow-[0_1px_3px_rgba(0,0,0,0.03)]">
+          EVENT VERIFIED
+        </span>
+</div>
+</div>
+</header>
+<!-- Interactive Apple Float Toast Notification -->
+<div class="fixed top-16 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 pointer-events-none opacity-0 translate-y-[-10px] flex items-center gap-2 px-4 py-2.5 rounded-full bg-white/95 border border-black/10 text-[#1d1d1f] backdrop-blur-2xl shadow-[0_12px_32px_rgba(0,0,0,0.12)]" id="synergy-toast">
+<span class="material-symbols-outlined text-[#005cba] text-[18px]">check_circle</span>
+<span class="text-[12px] font-medium tracking-tight" id="toast-text">出征战报已就绪</span>
+</div>
+<!-- Main Content Canvas -->
+<main class="flex-1 flex flex-col items-center w-full px-4 pt-3 pb-safe z-10 max-w-md mx-auto space-y-4">
+<!-- Sub-status Bar -->
+<div class="w-full flex items-center justify-between px-1 text-xs font-mono">
+<div class="flex items-center gap-2">
+<span class="inline-block w-1.5 h-1.5 rounded-full bg-[#1d1d1f] animate-pulse"></span>
+<span class="text-[#6e6e73] uppercase tracking-widest text-[11px] font-medium">KEYNOTE 2025 · LIVE DISPATCH</span>
+</div>
+<span class="text-[#86868b] text-[11px]">SPEC // NO.8492</span>
+</div>
+<!-- Apple Style Keynote Poster Canvas (Refined Pure White & Light Platinum, Delicate Shadows) -->
+<div class="relative w-full rounded-[24px] bg-white border border-black/[0.08] p-5 sm:p-6 shadow-[0_20px_50px_rgba(0,0,0,0.07),0_1px_3px_rgba(0,0,0,0.04)] flex flex-col justify-between overflow-hidden">
+<!-- Keynote Radial Glow & Architectural Rings -->
+<div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(245,245,247,0.8)_0%,transparent_70%)] pointer-events-none"></div>
+<div class="absolute -right-20 -top-20 w-48 h-48 border border-black/[0.05] rounded-full pointer-events-none"></div>
+<div class="absolute -right-10 -top-10 w-28 h-28 border border-black/[0.04] rounded-full pointer-events-none"></div>
+<!-- Poster Content -->
+<div class="relative z-10 flex flex-col space-y-4">
+<!-- Poster Header -->
+<div class="flex flex-col items-center text-center pt-1 pb-1">
+<!-- Minimal Angler Metallic Medallion -->
+<div class="w-12 h-12 rounded-full border border-black/10 bg-[#f5f5f7] flex items-center justify-center mb-3 shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_4px_12px_rgba(0,0,0,0.06)]">
+<svg class="w-5 h-5 text-[#1d1d1f]" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<path d="M12 2v20"></path>
+<path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+</svg>
+</div>
+<div class="flex items-center gap-2 text-[11px] font-mono tracking-widest text-[#86868b] uppercase mb-1.5">
+<span>APEX ANGLER SPECIAL EVENT</span>
+<span class="text-black/20">/</span>
+<span class="text-[#1d1d1f] font-semibold">2025 战役</span>
+</div>
+<h1 class="text-2xl min-[375px]:text-[28px] font-extrabold text-[#1d1d1f] tracking-tight leading-snug">
+          水域集结，破浪出征。
+        </h1>
+<p class="text-[12px] text-[#6e6e73] font-mono tracking-tight mt-1.5 font-normal">
+          2025 钓友竞技拉练 · 终极编组名单
+        </p>
+</div>
+<!-- Team Roster Cards (Refined Apple Minimal List Style) -->
+<div class="w-full space-y-2.5">
+<!-- Team 1 -->
+<div class="w-full rounded-2xl bg-[#fafafc] border border-black/[0.06] p-3.5 flex flex-col space-y-2.5 shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="px-2.5 py-0.5 rounded-full bg-[#1d1d1f] text-white font-mono text-[11px] font-bold tracking-wide shadow-sm">
+                01 · 破浪队
+              </span>
+<span class="text-[11px] text-[#6e6e73] font-mono font-medium">SECTOR // A01-A08</span>
+</div>
+<span class="text-[11px] text-[#86868b] font-mono tracking-tight font-medium">主攻：深水重草区</span>
+</div>
+<div class="flex items-center justify-between pt-2 border-t border-black/[0.05]">
+<span class="text-[11px] text-[#86868b] font-mono">钓手编组</span>
+<div class="flex items-center gap-2 text-[14px] font-bold text-[#1d1d1f]">
+<span>老张</span>
+<span class="text-black/20 text-xs">/</span>
+<span>阿强</span>
+<span class="text-black/20 text-xs">/</span>
+<span>顾念</span>
+</div>
+</div>
+</div>
+<!-- Team 2 -->
+<div class="w-full rounded-2xl bg-[#fafafc] border border-black/[0.06] p-3.5 flex flex-col space-y-2.5 shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="px-2.5 py-0.5 rounded-full bg-[#e5e5ea] text-[#1d1d1f] font-mono text-[11px] font-bold tracking-wide">
+                02 · 游刃队
+              </span>
+<span class="text-[11px] text-[#6e6e73] font-mono font-medium">SECTOR // B01-B06</span>
+</div>
+<span class="text-[11px] text-[#86868b] font-mono tracking-tight font-medium">主攻：急流回水湾</span>
+</div>
+<div class="flex items-center justify-between pt-2 border-t border-black/[0.05]">
+<span class="text-[11px] text-[#86868b] font-mono">钓手编组</span>
+<div class="flex items-center gap-2 text-[14px] font-bold text-[#1d1d1f]">
+<span>李哥</span>
+<span class="text-black/20 text-xs">/</span>
+<span>刘师傅</span>
+<span class="text-black/20 text-xs">/</span>
+<span>小赵</span>
+</div>
+</div>
+</div>
+<!-- Team 3 -->
+<div class="w-full rounded-2xl bg-[#fafafc] border border-black/[0.06] p-3.5 flex flex-col space-y-2.5 shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="px-2.5 py-0.5 rounded-full bg-[#e5e5ea] text-[#1d1d1f] font-mono text-[11px] font-bold tracking-wide">
+                03 · 拔萃队
+              </span>
+<span class="text-[11px] text-[#6e6e73] font-mono font-medium">SECTOR // C01-C04</span>
+</div>
+<span class="text-[11px] text-[#86868b] font-mono tracking-tight font-medium">主攻：库湾标点作钓</span>
+</div>
+<div class="flex items-center justify-between pt-2 border-t border-black/[0.05]">
+<span class="text-[11px] text-[#86868b] font-mono">钓手编组</span>
+<div class="flex items-center gap-2 text-[14px] font-bold text-[#1d1d1f]">
+<span>陈工</span>
+<span class="text-black/20 text-xs">/</span>
+<span>大鹏</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer Verification & QR Code -->
+<div class="w-full space-y-2.5 pt-1">
+<div class="w-full rounded-full border border-black/[0.06] bg-[#f5f5f7] py-1.5 px-3 flex items-center justify-center gap-1.5 text-center">
+<span class="material-symbols-outlined text-[#1d1d1f] text-[15px]">verified</span>
+<span class="text-[11px] text-[#6e6e73] font-mono font-medium tracking-tight">Angler RNG · 钓友会区块链公证 · 绝对公平抽签</span>
+</div>
+<!-- Crisp Light Monochrome QR Area -->
+<div class="w-full rounded-2xl bg-[#fafafc] border border-black/[0.06] p-3 flex items-center gap-3 shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
+<div class="w-12 h-12 rounded-xl bg-white border border-black/[0.08] p-1.5 flex-shrink-0 flex items-center justify-center shadow-sm">
+<svg class="w-full h-full text-[#1d1d1f]" fill="currentColor" viewbox="0 0 24 24">
+<path d="M2 2h7v7H2V2zm2 2v3h3V4H4zm9-2h7v7h-7V2zm2 2v3h3V4h-3zM2 13h7v7H2v-7zm2 2v3h3v-3H4zm10-2h2v2h-2v-2zm3 0h3v4h-2v-2h-1v-2zm-3 4h2v3h-2v-3zm3 1h1v2h-1v-2zm2-2h2v2h-2v-2zm-8-3h2v2h-2v-2zm0 3h2v3h-2v-3z"></path>
+</svg>
+</div>
+<div class="flex-1 flex flex-col justify-center min-w-0">
+<span class="text-xs font-bold text-[#1d1d1f] truncate tracking-tight">扫码查看钓位 / 战术详情</span>
+<span class="text-[11px] text-[#86868b] truncate mt-0.5">钓鱼人专属公证重组 · 长按识别入场</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Apple High-End Light Action Dock -->
+<div class="w-full space-y-2.5 pb-2">
+<!-- Primary Save Button -->
+<button class="w-full py-3.5 px-4 rounded-2xl bg-[#1d1d1f] text-white font-bold text-sm tracking-wide flex items-center justify-center gap-2 hover:bg-black active:scale-[0.98] transition-all shadow-[0_6px_20px_rgba(0,0,0,0.15)]" id="btn-save-poster">
+<span class="material-symbols-outlined text-[19px]">photo_camera</span>
+<span>长按或点击保存出征海报 📸</span>
+</button>
+<!-- Secondary Action Buttons (Platinum Silver Glass Cards) -->
+<div class="grid grid-cols-3 gap-2">
+<button class="flex flex-col items-center justify-center py-2.5 px-2 rounded-2xl bg-white border border-black/[0.08] text-[#1d1d1f] hover:bg-[#fafafc] active:scale-95 transition-all shadow-[0_1px_3px_rgba(0,0,0,0.03)]" id="btn-copy-text">
+<span class="material-symbols-outlined text-[19px] text-[#6e6e73] mb-1">content_copy</span>
+<span class="text-[11px] font-semibold tracking-tight">复制名单文本</span>
+</button>
+<button class="flex flex-col items-center justify-center py-2.5 px-2 rounded-2xl bg-white border border-black/[0.08] text-[#1d1d1f] hover:bg-[#fafafc] active:scale-95 transition-all shadow-[0_1px_3px_rgba(0,0,0,0.03)]" id="btn-share-chat">
+<span class="material-symbols-outlined text-[19px] text-[#6e6e73] mb-1">forum</span>
+<span class="text-[11px] font-semibold tracking-tight">分享钓友群</span>
+</button>
+<button class="flex flex-col items-center justify-center py-2.5 px-2 rounded-2xl bg-white border border-black/[0.08] text-[#1d1d1f] hover:bg-[#fafafc] active:scale-95 transition-all shadow-[0_1px_3px_rgba(0,0,0,0.03)]" id="btn-reroll">
+<span class="material-symbols-outlined text-[19px] text-[#6e6e73] mb-1">refresh</span>
+<span class="text-[11px] font-semibold tracking-tight">重抽钓位 ↺</span>
+</button>
+</div>
+</div>
+</main>
+<!-- Interactive Script -->
+<script>
+    (function() {
+      const toast = document.getElementById('synergy-toast');
+      const toastText = document.getElementById('toast-text');
+      let toastTimeout = null;
+
+      function showToast(message) {
+        if (toastTimeout) clearTimeout(toastTimeout);
+        toastText.textContent = message;
+        toast.classList.remove('opacity-0', 'translate-y-[-10px]');
+        toast.classList.add('opacity-100', 'translate-y-0');
+        toastTimeout = setTimeout(() => {
+          toast.classList.remove('opacity-100', 'translate-y-0');
+          toast.classList.add('opacity-0', 'translate-y-[-10px]');
+        }, 2400);
+      }
+
+      const rosterText = "【2025 钓友竞技出征名单】\n🎣 [01 破浪队 · 深水区]: 老张 / 阿强 / 顾念\n🎣 [02 游刃队 · 回水湾]: 李哥 / 刘师傅 / 小赵\n🎣 [03 拔萃队 · 库湾区]: 陈工 / 大鹏\n—— 由 APEX ANGLER 钓友会公证链存证生成";
+
+      document.getElementById('btn-save-poster')?.addEventListener('click', () => {
+        showToast("出征海报已生成，正在保存高清图片到相册 📸");
+      });
+
+      document.getElementById('btn-copy-text')?.addEventListener('click', () => {
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(rosterText).catch(() => {});
+        }
+        showToast("出征名单文本已复制，可直接发微信群！");
+      });
+
+      document.getElementById('btn-share-chat')?.addEventListener('click', () => {
+        showToast("已调起钓友微信群分享面板 🎣");
+      });
+
+      document.getElementById('btn-reroll')?.addEventListener('click', () => {
+        showToast("随机公证因子重置中，已启动新一轮抽签 ↺");
+      });
+    })();
+</script>
+</body></html>
