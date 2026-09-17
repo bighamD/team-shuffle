@@ -2,7 +2,6 @@ import {
 	ArrowLeftIcon,
 	CameraIcon,
 	CheckCircledIcon,
-	CopyIcon,
 	Cross2Icon,
 	DownloadIcon,
 	DragHandleDots2Icon,
@@ -13,9 +12,9 @@ import {
 	PlusIcon,
 	ReloadIcon,
 	RocketIcon,
-	Share1Icon,
 	ShuffleIcon,
 	TargetIcon,
+	TrashIcon,
 } from '@radix-ui/react-icons';
 import QRCode from 'qrcode';
 import {
@@ -29,7 +28,6 @@ import {
 } from 'react';
 import {
 	FlowStack,
-	KeyboardInput,
 	MobileScroll,
 	type FlowControls,
 	type FlowScreen,
@@ -48,22 +46,16 @@ type AppContextValue = {
 	setGroupCount: (count: number) => void;
 	addMember: (name: string) => string | null;
 	removeMember: (id: string) => void;
+	clearMembers: () => void;
 	usePreset: () => void;
-	shuffleTeams: () => Team[] | null;
+	shuffleTeams: (countOverride?: number) => Team[] | null;
 	swapMembers: (firstId: string, secondId: string) => void;
 	createShareUrl: () => string;
 	notify: (text: string) => void;
 };
 
 const STORAGE_KEY = 'apex-angler-state-v1';
-const teamNames = [
-	'孤舟 · 破浪队',
-	'深潭 · 游刃队',
-	'巨物 · 拔萃队',
-	'云汀 · 逐浪队',
-	'远礁 · 竞潮队',
-	'星湾 · 领航队',
-];
+const defaultMemberNames = ['生蚝🦪'];
 const presetNames = [
 	'生蚝🦪',
 	'鸡哥',
@@ -99,10 +91,22 @@ function shuffle<T>(items: T[]): T[] {
 	return next;
 }
 
+function teamLabel(index: number) {
+	return `队伍${index + 1}`;
+}
+
+function parseCustomGroupCount(draft: string, fallback: number) {
+	const trimmed = draft.trim();
+	if (!trimmed) return fallback;
+	const parsed = Number(trimmed);
+	if (!Number.isFinite(parsed)) return fallback;
+	return Math.min(99, Math.max(2, Math.round(parsed)));
+}
+
 function distribute(members: Member[], count: number): Team[] {
 	const teams = Array.from({ length: count }, (_, index) => ({
 		id: `team-${index + 1}`,
-		name: teamNames[index] ?? `第 ${index + 1} 钓队`,
+		name: teamLabel(index),
 		members: [] as Member[],
 	}));
 	shuffle(members).forEach((member, index) =>
@@ -142,7 +146,7 @@ function decodeShare(value: string): Team[] | null {
 		if (!Array.isArray(parsed.teams) || parsed.teams.length < 2) return null;
 		return parsed.teams.map((team, teamIndex) => ({
 			id: `shared-team-${teamIndex}`,
-			name: team.name || teamNames[teamIndex],
+			name: team.name || teamLabel(teamIndex),
 			members: team.members.map((name, memberIndex) => ({
 				id: `shared-${teamIndex}-${memberIndex}`,
 				name,
@@ -177,10 +181,10 @@ function readInitialState() {
 				fromShare: false,
 			};
 	} catch {
-		/* Invalid local data falls back to the sample roster. */
+		/* Invalid local data falls back to the default placeholder roster. */
 	}
 	return {
-		members: makeMembers(presetNames),
+		members: makeMembers(defaultMemberNames),
 		groupCount: 3,
 		teams: [] as Team[],
 		fromShare: false,
@@ -247,6 +251,12 @@ function AppProvider({ children }: { children: ReactNode }) {
 			setMembers((current) => current.filter((member) => member.id !== id)),
 		[],
 	);
+	const clearMembers = useCallback(() => {
+		setMembers([]);
+		setTeams([]);
+		setShareUrl('');
+		notify('已清空钓友名单');
+	}, [notify]);
 	const usePreset = useCallback(() => {
 		setMembers(makeMembers(presetNames));
 		setGroupCount(3);
@@ -254,20 +264,25 @@ function AppProvider({ children }: { children: ReactNode }) {
 		notify('已导入 9 位示例钓友');
 	}, [notify]);
 
-	const shuffleTeams = useCallback(() => {
-		if (members.length < 2) {
-			notify('至少需要 2 位钓友');
-			return null;
-		}
-		if (groupCount > members.length) {
-			notify('分组数量不能超过钓友人数');
-			return null;
-		}
-		const next = distribute(members, groupCount);
-		setTeams(next);
-		setShareUrl('');
-		return next;
-	}, [groupCount, members, notify]);
+	const shuffleTeams = useCallback(
+		(countOverride?: number) => {
+			const count = countOverride ?? groupCount;
+			if (members.length < 2) {
+				notify('至少需要 2 位钓友');
+				return null;
+			}
+			if (count > members.length) {
+				notify('分组数量不能超过钓友人数');
+				return null;
+			}
+			if (count !== groupCount) setGroupCount(count);
+			const next = distribute(members, count);
+			setTeams(next);
+			setShareUrl('');
+			return next;
+		},
+		[groupCount, members, notify],
+	);
 
 	const swapMembers = useCallback(
 		(firstId: string, secondId: string) => {
@@ -323,6 +338,7 @@ function AppProvider({ children }: { children: ReactNode }) {
 			setGroupCount,
 			addMember,
 			removeMember,
+			clearMembers,
 			usePreset,
 			shuffleTeams,
 			swapMembers,
@@ -336,6 +352,7 @@ function AppProvider({ children }: { children: ReactNode }) {
 			members,
 			notify,
 			qrCode,
+			clearMembers,
 			removeMember,
 			shareUrl,
 			shuffleTeams,
@@ -356,11 +373,10 @@ function AppHeader({
 	mode: 'entry' | 'result' | 'share';
 }) {
 	const labels = {
-		entry: ['APEX ANGLER', '钓友随机分队 · 竞技协同'],
-		result: ['ANGLER · OPS', '作钓编组系统'],
-		share: ['APEX ANGLER', '钓队出征战报 · 发布会'],
+		entry: '钓友随机分队 · 竞技协同',
+		result: '作钓编组系统',
+		share: '钓队出征战报 · 发布会',
 	} as const;
-	const [title, subtitle] = labels[mode];
 	const goBack = () => {
 		if (flow.canGoBack) flow.pop();
 		else {
@@ -385,8 +401,7 @@ function AppHeader({
 					</span>
 				)}
 				<span className='brand-copy'>
-					<strong>{title}</strong>
-					<small>{subtitle}</small>
+					<strong>{labels[mode]}</strong>
 				</span>
 			</div>
 			<span className='header-badge'>
@@ -426,12 +441,26 @@ function EntryScreen({ flow }: { flow: FlowControls }) {
 		setGroupCount,
 		addMember,
 		removeMember,
+		clearMembers,
 		usePreset,
 		shuffleTeams,
 		notify,
 	} = useApp();
 	const [name, setName] = useState('');
-	const estimated = Math.ceil(members.length / groupCount);
+	const [customGroupOpen, setCustomGroupOpen] = useState(groupCount > 4);
+	const [customGroupDraft, setCustomGroupDraft] = useState(String(groupCount));
+	const estimated =
+		members.length > 0 ? Math.ceil(members.length / groupCount) : 0;
+
+	const commitCustomGroup = useCallback(() => {
+		const next = parseCustomGroupCount(customGroupDraft, groupCount);
+		if (!customGroupDraft.trim()) {
+			setCustomGroupDraft(String(groupCount));
+			return;
+		}
+		setGroupCount(next);
+		setCustomGroupDraft(String(next));
+	}, [customGroupDraft, groupCount, setGroupCount]);
 	const submit = () => {
 		const error = addMember(name);
 		if (error) return notify(error);
@@ -439,7 +468,11 @@ function EntryScreen({ flow }: { flow: FlowControls }) {
 		notify('钓友已加入本次编组');
 	};
 	const start = () => {
-		if (shuffleTeams()) flow.push(resultScreen);
+		const count = customGroupOpen
+			? parseCustomGroupCount(customGroupDraft, groupCount)
+			: groupCount;
+		if (customGroupOpen) setCustomGroupDraft(String(count));
+		if (shuffleTeams(count)) flow.push(resultScreen);
 	};
 	return (
 		<MobileScroll className='app-screen'>
@@ -465,13 +498,24 @@ function EntryScreen({ flow }: { flow: FlowControls }) {
 							<PersonIcon />
 							钓友名单
 						</span>
-						<button type='button' className='ghost-small' onClick={usePreset}>
-							<EnterIcon />
-							导入示例
-						</button>
+						<div className='roster-actions'>
+							<button
+								type='button'
+								className='ghost-small ghost-icon'
+								disabled={members.length === 0}
+								onClick={clearMembers}
+								aria-label='一键清除钓友名单'
+								data-testid='clear-members-button'>
+								<TrashIcon />
+							</button>
+							<button type='button' className='ghost-small' onClick={usePreset}>
+								<EnterIcon />
+								导入预设
+							</button>
+						</div>
 					</div>
 					<div className='add-row'>
-						<KeyboardInput
+						<input
 							value={name}
 							onChange={(event) => setName(event.target.value)}
 							onKeyDown={(event) => event.key === 'Enter' && submit()}
@@ -518,16 +562,57 @@ function EntryScreen({ flow }: { flow: FlowControls }) {
 					</div>
 					<label className='field-caption'>选择分成几组</label>
 					<div className='group-picker'>
-						{[2, 3, 4, 5].map((count) => (
+						{[2, 3, 4].map((count) => (
 							<button
 								key={count}
 								type='button'
-								className={count === groupCount ? 'active' : ''}
-								onClick={() => setGroupCount(count)}>
+								className={
+									!customGroupOpen && count === groupCount ? 'active' : ''
+								}
+								onClick={() => {
+									setCustomGroupOpen(false);
+									setGroupCount(count);
+								}}>
 								{count} 组
 							</button>
 						))}
+						<button
+							type='button'
+							className={customGroupOpen ? 'active' : ''}
+							onClick={() => {
+								setCustomGroupOpen(true);
+								setCustomGroupDraft(String(groupCount));
+							}}>
+							自定义
+						</button>
 					</div>
+					{customGroupOpen ? (
+						<label className='custom-group-row'>
+							<span>分成</span>
+							<input
+								type='text'
+								inputMode='numeric'
+								pattern='[0-9]*'
+								value={customGroupDraft}
+								onChange={(event) =>
+									setCustomGroupDraft(
+										event.target.value.replace(/\D/g, '').slice(0, 2),
+									)
+								}
+								onBlur={commitCustomGroup}
+								onKeyDown={(event) => {
+									if (event.key === 'Enter') {
+										event.preventDefault();
+										commitCustomGroup();
+										event.currentTarget.blur();
+									}
+								}}
+								aria-label='自定义分组数量'
+							/>
+							<span>组</span>
+							<small>最多不能超过当前钓友人数</small>
+						</label>
+					) : null}
 					<div className='projection-card'>
 						<RocketIcon />
 						<span>
@@ -540,17 +625,17 @@ function EntryScreen({ flow }: { flow: FlowControls }) {
 					<div className='rule-note'>
 						<CheckCircledIcon />
 						<span>
-							<strong>完全随机，人数均匀</strong>
+							<strong>完全随机，保证公平，人数均匀</strong>
 							<small>人数无法整除时，各组人数最多相差 1 人。</small>
 						</span>
 					</div>
-					<div className='rule-note'>
+					{/* <div className='rule-note'>
 						<CheckCircledIcon />
 						<span>
 							<strong>自动保存在当前设备</strong>
 							<small>名单与最近一次结果存入 localStorage。</small>
 						</span>
-					</div>
+					</div> */}
 				</section>
 				<button
 					className='primary-action'
@@ -690,23 +775,6 @@ function ShareScreen({ flow }: { flow: FlowControls }) {
 	useEffect(() => {
 		if (!shareUrl && teams.length) createShareUrl();
 	}, [createShareUrl, shareUrl, teams.length]);
-	const copyText = async () => {
-		await navigator.clipboard.writeText(formatTeamText(teams));
-		notify('分组名单已复制');
-	};
-	const copyLink = async () => {
-		await navigator.clipboard.writeText(activeUrl);
-		notify('分享链接已复制');
-	};
-	const share = async () => {
-		if (navigator.share)
-			await navigator.share({
-				title: '钓友随机分组结果',
-				text: formatTeamText(teams),
-				url: activeUrl,
-			});
-		else await copyLink();
-	};
 	const savePoster = async () => {
 		await downloadPoster(
 			teams,
@@ -777,20 +845,6 @@ function ShareScreen({ flow }: { flow: FlowControls }) {
 					<CameraIcon />
 					<span>保存出征海报</span>
 				</button>
-				<div className='share-actions'>
-					<button type='button' onClick={copyText}>
-						<CopyIcon />
-						<span>复制名单</span>
-					</button>
-					<button type='button' onClick={share}>
-						<Share1Icon />
-						<span>系统分享</span>
-					</button>
-					<button type='button' onClick={copyLink}>
-						<Link2Icon />
-						<span>复制链接</span>
-					</button>
-				</div>
 				<button
 					className='text-action'
 					type='button'
@@ -817,15 +871,6 @@ function ToastView() {
 }
 function shortTeamName(name: string) {
 	return name.split('·').pop()?.trim() ?? name;
-}
-function formatTeamText(teams: Team[]) {
-	return [
-		'钓友随机分组结果',
-		...teams.map(
-			(team, index) =>
-				`${index + 1}. ${team.name}：${team.members.map((member) => member.name).join('、')}`,
-		),
-	].join('\n');
 }
 function loadImage(src: string) {
 	return new Promise<HTMLImageElement>((resolve, reject) => {

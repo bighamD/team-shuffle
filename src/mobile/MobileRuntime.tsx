@@ -1,21 +1,15 @@
-import { useEffect, type PropsWithChildren } from "react";
+import { type PropsWithChildren } from "react";
 import { MobileDeviceProvider, useMobileDevice } from "./Device";
-import { KeyboardDock, KeyboardProvider, useKeyboard } from "./Keyboard";
-import { PhoneFrame } from "./PhoneFrame";
-import { HomeIndicator, StatusBar } from "./components";
+import { KeyboardProvider, useKeyboard } from "./Keyboard";
 
 export function MobileRuntime({ children }: PropsWithChildren) {
   return (
     <MobileDeviceProvider>
-      <PhoneFrame>
-        <KeyboardProvider>
-          <KeyboardPreview />
-          <StatusBar />
+      <KeyboardProvider>
+        <div className="h5-runtime">
           <MobileAppViewport>{children}</MobileAppViewport>
-          <HomeIndicator />
-          <KeyboardDock />
-        </KeyboardProvider>
-      </PhoneFrame>
+        </div>
+      </KeyboardProvider>
     </MobileDeviceProvider>
   );
 }
@@ -34,17 +28,4 @@ function MobileAppViewport({ children }: PropsWithChildren) {
       {children}
     </div>
   );
-}
-
-function KeyboardPreview() {
-  const keyboard = useKeyboard();
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("keyboard") === "1") {
-      keyboard.show();
-    }
-  }, [keyboard]);
-
-  return null;
 }

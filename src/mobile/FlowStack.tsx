@@ -151,7 +151,7 @@ export function FlowStack({ initial }: { initial: FlowScreen }) {
   const parkedX = -screenWidth * 0.28;
   const header = controls.current.header?.(controls);
   const headerHeight = controls.current.headerHeight ?? 0;
-  const headerSafeArea = header ? device.geometry.safeArea.top : 0;
+  const headerSafeArea = 0;
   const totalHeaderHeight = header ? headerSafeArea + headerHeight : 0;
   const footer = controls.current.footer?.(controls);
   const footerHeight = controls.current.footerHeight ?? 0;
