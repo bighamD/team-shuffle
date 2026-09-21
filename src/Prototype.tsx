@@ -890,8 +890,6 @@ function ShareScreen({ flow }: { flow: FlowControls }) {
 
 const SPIN_MS = 1150;
 const DONE_MS = 620;
-const REEL_ITEM_HEIGHT = 54;
-const REEL_FILLER = 26;
 
 function ShuffleOverlay() {
 	const { reveal, endReveal } = useApp();
@@ -916,33 +914,23 @@ function ShuffleOverlay() {
 			});
 		return slots;
 	}, [teams]);
-	const reelItems = useMemo(() => {
-		const filler = Array.from(
-			{ length: REEL_FILLER },
-			() => names[Math.floor(Math.random() * names.length)] ?? '',
-		);
-		const dealNames = dealOrder.map(
-			(slot) => teams[slot.team]?.members[slot.member]?.name ?? '',
-		);
-		return ['', ...filler, ...dealNames];
-	}, [dealOrder, names, teams]);
-	const stepMs = Math.max(45, Math.min(130, 950 / Math.max(dealOrder.length, 1)));
 	const [phase, setPhase] = useState<'spin' | 'deal' | 'done'>('spin');
-	const [reelRunning, setReelRunning] = useState(false);
+	const [rolling, setRolling] = useState('');
 	const [dealt, setDealt] = useState(0);
 
 	useEffect(() => {
 		if (!reveal) return;
 		setPhase('spin');
 		setDealt(0);
-		setReelRunning(false);
-		const frame = window.requestAnimationFrame(() => setReelRunning(true));
+		const roll = window.setInterval(() => {
+			setRolling(names[Math.floor(Math.random() * names.length)] ?? '');
+		}, 70);
 		const toDeal = window.setTimeout(() => setPhase('deal'), SPIN_MS);
 		return () => {
-			window.cancelAnimationFrame(frame);
+			window.clearInterval(roll);
 			window.clearTimeout(toDeal);
 		};
-	}, [reveal]);
+	}, [names, reveal]);
 
 	useEffect(() => {
 		if (!reveal || phase !== 'deal') return;
@@ -950,9 +938,10 @@ function ShuffleOverlay() {
 			const settle = window.setTimeout(() => setPhase('done'), 240);
 			return () => window.clearTimeout(settle);
 		}
-		const tick = window.setTimeout(() => setDealt((value) => value + 1), stepMs);
+		const step = Math.max(45, Math.min(130, 950 / dealOrder.length));
+		const tick = window.setTimeout(() => setDealt((value) => value + 1), step);
 		return () => window.clearTimeout(tick);
-	}, [dealOrder.length, dealt, phase, reveal, stepMs]);
+	}, [dealOrder.length, dealt, phase, reveal]);
 
 	useEffect(() => {
 		if (!reveal || phase !== 'done') return;
@@ -976,12 +965,11 @@ function ShuffleOverlay() {
 				: 0.2 + 0.8 * (dealt / Math.max(dealOrder.length, 1));
 	const caption =
 		phase === 'spin' ? '洗牌中' : phase === 'deal' ? '发牌中' : '编组完成';
-	const reelIndex =
-		phase === 'spin'
-			? reelRunning
-				? REEL_FILLER + 1
-				: 0
-			: REEL_FILLER + Math.max(Math.min(dealt, dealOrder.length), 1);
+	const dealingSlot =
+		dealOrder[Math.min(Math.max(dealt - 1, 0), dealOrder.length - 1)];
+	const dealingName = dealingSlot
+		? (teams[dealingSlot.team]?.members[dealingSlot.member]?.name ?? '')
+		: '';
 
 	return (
 		<div
@@ -994,36 +982,14 @@ function ShuffleOverlay() {
 				<span className='eyebrow'>
 					<i /> ANGLER RNG · FAIR SHUFFLE
 				</span>
-				<div className='shuffle-reel'>
-					<span className='shuffle-reel-payline' />
-					<div className='shuffle-reel-window'>
-						<div
-							className='shuffle-reel-strip'
-							style={{
-								transform: `translateY(${-(reelIndex - 1) * REEL_ITEM_HEIGHT}px)`,
-								transitionDuration:
-									phase === 'spin'
-										? `${SPIN_MS}ms`
-										: `${Math.round(stepMs * 0.8)}ms`,
-								transitionTimingFunction:
-									phase === 'spin'
-										? 'cubic-bezier(.16,.62,.28,1)'
-										: 'cubic-bezier(.2,.85,.3,1)',
-							}}>
-							{reelItems.map((name, index) => (
-								<b
-									className={index === reelIndex ? 'active' : ''}
-									key={`${index}-${name}`}>
-									{name}
-								</b>
-							))}
-						</div>
-					</div>
+				<div className='shuffle-dial'>
 					{phase === 'done' ? (
-						<span className='shuffle-reel-seal'>
-							<CheckCircledIcon />
-						</span>
-					) : null}
+						<CheckCircledIcon />
+					) : (
+						<strong key={phase === 'spin' ? rolling : dealt}>
+							{phase === 'spin' ? rolling : dealingName}
+						</strong>
+					)}
 				</div>
 				<div className='shuffle-progress'>
 					<span style={{ width: `${Math.round(progress * 100)}%` }} />
