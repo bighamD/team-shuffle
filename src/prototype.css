@@ -91,12 +91,20 @@ button, input { font: inherit; } button { -webkit-tap-highlight-color: transpare
 .shuffle-overlay { position: fixed; top: 0; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 430px; z-index: 60; display: flex; align-items: center; justify-content: center; padding: 24px 20px calc(env(safe-area-inset-bottom, 0px) + 24px); box-sizing: border-box; background: rgba(245,245,247,.82); backdrop-filter: blur(26px); opacity: 0; pointer-events: none; transition: opacity .26s ease; }
 .shuffle-overlay.visible { opacity: 1; pointer-events: auto; }
 .shuffle-stage { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 16px; }
-.shuffle-dial { position: relative; width: 132px; height: 132px; display: grid; place-items: center; padding: 0 14px; box-sizing: border-box; border-radius: 50%; background: #fff; border: 1px solid rgba(0,0,0,.06); box-shadow: 0 16px 42px rgba(0,0,0,.12); }
-.shuffle-dial::before { content: ""; position: absolute; inset: -7px; border-radius: 50%; background: conic-gradient(from 0deg, rgba(29,29,31,0) 15%, #1d1d1f); -webkit-mask: radial-gradient(circle, transparent 65px, #000 66px); mask: radial-gradient(circle, transparent 65px, #000 66px); animation: dial-spin .9s linear infinite; }
-.shuffle-overlay.phase-deal .shuffle-dial::before { animation-duration: 1.8s; opacity: .55; }
-.shuffle-overlay.phase-done .shuffle-dial::before { animation: none; opacity: .18; }
-.shuffle-dial strong { font: 800 21px/1.2 "Plus Jakarta Sans", sans-serif; letter-spacing: -.03em; text-align: center; animation: name-flip .16s ease both; }
-.shuffle-dial svg { width: 34px; height: 34px; animation: slot-pop .32s ease both; }
+.shuffle-reel { position: relative; width: 208px; padding: 9px; border-radius: 24px; background: #fff; border: 1px solid rgba(0,0,0,.07); box-shadow: 0 18px 44px rgba(0,0,0,.13), inset 0 1px 0 #fff; }
+.shuffle-reel-window { position: relative; height: 162px; overflow: hidden; border-radius: 16px; background: linear-gradient(#f0f0f2, #fafafa 28%, #fafafa 72%, #f0f0f2); -webkit-mask: linear-gradient(transparent, #000 26%, #000 74%, transparent); mask: linear-gradient(transparent, #000 26%, #000 74%, transparent); }
+.shuffle-reel-strip { transition-property: transform; will-change: transform; }
+.shuffle-reel-strip b { height: 54px; display: flex; align-items: center; justify-content: center; font: 700 19px/1 "Plus Jakarta Sans", sans-serif; letter-spacing: -.02em; color: #86868b; transition: color .18s ease, transform .18s ease; }
+.shuffle-reel-strip b.active { color: #1d1d1f; font-size: 22px; font-weight: 800; }
+.shuffle-overlay.phase-spin .shuffle-reel-strip b { filter: blur(.7px); opacity: .8; }
+.shuffle-reel-payline { position: absolute; left: 9px; right: 9px; top: 50%; height: 54px; margin-top: -27px; border-radius: 13px; border: 1px solid rgba(0,0,0,.16); box-shadow: 0 0 0 4px rgba(255,255,255,.55), inset 0 1px 2px rgba(0,0,0,.05); pointer-events: none; transition: border-color .2s ease; }
+.shuffle-reel-payline::before, .shuffle-reel-payline::after { content: ""; position: absolute; top: 50%; width: 7px; height: 7px; margin-top: -3.5px; background: #1d1d1f; opacity: .55; clip-path: polygon(0 0, 100% 50%, 0 100%); }
+.shuffle-reel-payline::before { left: -3px; }
+.shuffle-reel-payline::after { right: -3px; transform: rotate(180deg); }
+.shuffle-overlay.phase-done .shuffle-reel-payline { border-color: #1d1d1f; }
+.shuffle-overlay.phase-done .shuffle-reel-payline::before, .shuffle-overlay.phase-done .shuffle-reel-payline::after { opacity: 1; }
+.shuffle-reel-seal { position: absolute; right: -9px; bottom: -9px; width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; background: #1d1d1f; color: #fff; animation: slot-pop .3s ease both; }
+.shuffle-reel-seal svg { width: 18px; height: 18px; }
 .shuffle-progress { width: 168px; height: 4px; border-radius: 999px; background: rgba(0,0,0,.08); overflow: hidden; }
 .shuffle-progress span { display: block; height: 100%; border-radius: inherit; background: #1d1d1f; transition: width .22s ease; }
 .shuffle-caption { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
@@ -111,8 +119,6 @@ button, input { font: inherit; } button { -webkit-tap-highlight-color: transpare
 .shuffle-slot.pending { width: 34px; padding: 0; background: rgba(0,0,0,.05); }
 .shuffle-slot.filled { animation: slot-pop .26s ease both; }
 .shuffle-hint { color: #a1a1a6; font-size: 10px; }
-@keyframes dial-spin { to { transform: rotate(360deg); } }
-@keyframes name-flip { from { opacity: .35; transform: translateY(5px) scale(.94); } to { opacity: 1; transform: none; } }
 @keyframes slot-pop { from { opacity: 0; transform: scale(.82); } to { opacity: 1; transform: none; } }
-@media (prefers-reduced-motion: reduce) { .shuffle-dial::before { animation: none; } .shuffle-dial strong, .shuffle-slot.filled, .shuffle-dial svg { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .shuffle-reel-strip { transition-duration: 0s !important; } .shuffle-slot.filled, .shuffle-reel-seal { animation: none; } .shuffle-overlay.phase-spin .shuffle-reel-strip b { filter: none; } }
 @media (max-width: 370px) { .screen-content { padding-inline: 12px; }.hero-card, .panel { padding: 18px; }.hero-card h1 { font-size: 26px; }.poster-heading h1 { font-size: 21px; }.poster-teams article > div span { display: none; } }
