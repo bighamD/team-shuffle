@@ -23,6 +23,7 @@ import {
 	useContext,
 	useEffect,
 	useMemo,
+	useRef,
 	useState,
 	type ReactNode,
 } from 'react';
@@ -36,6 +37,7 @@ import {
 type Member = { id: string; name: string };
 type Team = { id: string; name: string; members: Member[] };
 type Toast = { id: number; text: string } | null;
+type Reveal = { teams: Team[]; token: number } | null;
 type AppContextValue = {
 	members: Member[];
 	groupCount: number;
@@ -43,6 +45,9 @@ type AppContextValue = {
 	shareUrl: string;
 	qrCode: string;
 	toast: Toast;
+	reveal: Reveal;
+	startReveal: (teams: Team[], onDone?: () => void) => void;
+	endReveal: () => void;
 	setGroupCount: (count: number) => void;
 	addMember: (name: string) => string | null;
 	removeMember: (id: string) => void;
@@ -205,6 +210,19 @@ function AppProvider({ children }: { children: ReactNode }) {
 		initial.teams.length ? buildShareUrl(initial.teams) : '',
 	);
 	const [qrCode, setQrCode] = useState('');
+	const [reveal, setReveal] = useState<Reveal>(null);
+	const revealDone = useRef<(() => void) | null>(null);
+
+	const startReveal = useCallback((next: Team[], onDone?: () => void) => {
+		revealDone.current = onDone ?? null;
+		setReveal({ teams: next, token: Date.now() });
+	}, []);
+	const endReveal = useCallback(() => {
+		setReveal((current) => (current ? null : current));
+		const done = revealDone.current;
+		revealDone.current = null;
+		done?.();
+	}, []);
 
 	const notify = useCallback((text: string) => {
 		const id = Date.now();
@@ -335,6 +353,9 @@ function AppProvider({ children }: { children: ReactNode }) {
 			shareUrl,
 			qrCode,
 			toast,
+			reveal,
+			startReveal,
+			endReveal,
 			setGroupCount,
 			addMember,
 			removeMember,
@@ -348,14 +369,17 @@ function AppProvider({ children }: { children: ReactNode }) {
 		[
 			addMember,
 			createShareUrl,
+			endReveal,
 			groupCount,
 			members,
 			notify,
 			qrCode,
 			clearMembers,
 			removeMember,
+			reveal,
 			shareUrl,
 			shuffleTeams,
+			startReveal,
 			swapMembers,
 			teams,
 			toast,
@@ -444,6 +468,7 @@ function EntryScreen({ flow }: { flow: FlowControls }) {
 		clearMembers,
 		usePreset,
 		shuffleTeams,
+		startReveal,
 		notify,
 	} = useApp();
 	const [name, setName] = useState('');
@@ -472,7 +497,8 @@ function EntryScreen({ flow }: { flow: FlowControls }) {
 			? parseCustomGroupCount(customGroupDraft, groupCount)
 			: groupCount;
 		if (customGroupOpen) setCustomGroupDraft(String(count));
-		if (shuffleTeams(count)) flow.push(resultScreen);
+		const next = shuffleTeams(count);
+		if (next) startReveal(next, () => flow.push(resultScreen));
 	};
 	return (
 		<MobileScroll className='app-screen'>
@@ -653,7 +679,8 @@ function EntryScreen({ flow }: { flow: FlowControls }) {
 }
 
 function ResultScreen({ flow }: { flow: FlowControls }) {
-	const { teams, shuffleTeams, swapMembers, createShareUrl, notify } = useApp();
+	const { teams, shuffleTeams, startReveal, swapMembers, createShareUrl, notify } =
+		useApp();
 	const [swapMode, setSwapMode] = useState(false);
 	const [selected, setSelected] = useState<string[]>([]);
 	const selectMember = (memberId: string) => {
@@ -736,10 +763,11 @@ function ResultScreen({ flow }: { flow: FlowControls }) {
 					<button
 						type='button'
 						onClick={() => {
-							shuffleTeams();
+							const next = shuffleTeams();
+							if (!next) return;
 							setSelected([]);
 							setSwapMode(false);
-							notify('已生成一套新的随机结果');
+							startReveal(next, () => notify('已生成一套新的随机结果'));
 						}}>
 						<ReloadIcon />
 						重新随机
@@ -860,6 +888,149 @@ function ShareScreen({ flow }: { flow: FlowControls }) {
 	);
 }
 
+const SPIN_MS = 1150;
+const DONE_MS = 620;
+
+function ShuffleOverlay() {
+	const { reveal, endReveal } = useApp();
+	const [snapshot, setSnapshot] = useState<Team[]>([]);
+	useEffect(() => {
+		if (reveal) setSnapshot(reveal.teams);
+	}, [reveal]);
+	const teams = reveal?.teams ?? snapshot;
+	const names = useMemo(
+		() => teams.flatMap((team) => team.members.map((member) => member.name)),
+		[teams],
+	);
+	const dealOrder = useMemo(() => {
+		const rounds = teams.reduce(
+			(max, team) => Math.max(max, team.members.length),
+			0,
+		);
+		const slots: Array<{ team: number; member: number }> = [];
+		for (let round = 0; round < rounds; round += 1)
+			teams.forEach((team, teamIndex) => {
+				if (team.members[round]) slots.push({ team: teamIndex, member: round });
+			});
+		return slots;
+	}, [teams]);
+	const [phase, setPhase] = useState<'spin' | 'deal' | 'done'>('spin');
+	const [rolling, setRolling] = useState('');
+	const [dealt, setDealt] = useState(0);
+
+	useEffect(() => {
+		if (!reveal) return;
+		setPhase('spin');
+		setDealt(0);
+		const roll = window.setInterval(() => {
+			setRolling(names[Math.floor(Math.random() * names.length)] ?? '');
+		}, 70);
+		const toDeal = window.setTimeout(() => setPhase('deal'), SPIN_MS);
+		return () => {
+			window.clearInterval(roll);
+			window.clearTimeout(toDeal);
+		};
+	}, [names, reveal]);
+
+	useEffect(() => {
+		if (!reveal || phase !== 'deal') return;
+		if (dealt >= dealOrder.length) {
+			const settle = window.setTimeout(() => setPhase('done'), 240);
+			return () => window.clearTimeout(settle);
+		}
+		const step = Math.max(45, Math.min(130, 950 / dealOrder.length));
+		const tick = window.setTimeout(() => setDealt((value) => value + 1), step);
+		return () => window.clearTimeout(tick);
+	}, [dealOrder.length, dealt, phase, reveal]);
+
+	useEffect(() => {
+		if (!reveal || phase !== 'done') return;
+		const exit = window.setTimeout(endReveal, DONE_MS);
+		return () => window.clearTimeout(exit);
+	}, [endReveal, phase, reveal]);
+
+	const revealedByTeam = teams.map(
+		(_, teamIndex) =>
+			phase === 'done'
+				? teams[teamIndex].members.length
+				: dealOrder
+						.slice(0, dealt)
+						.filter((slot) => slot.team === teamIndex).length,
+	);
+	const progress =
+		phase === 'spin'
+			? 0.2
+			: phase === 'done'
+				? 1
+				: 0.2 + 0.8 * (dealt / Math.max(dealOrder.length, 1));
+	const caption =
+		phase === 'spin' ? '洗牌中' : phase === 'deal' ? '发牌中' : '编组完成';
+	const dealingSlot =
+		dealOrder[Math.min(Math.max(dealt - 1, 0), dealOrder.length - 1)];
+	const dealingName = dealingSlot
+		? (teams[dealingSlot.team]?.members[dealingSlot.member]?.name ?? '')
+		: '';
+
+	return (
+		<div
+			className={`shuffle-overlay ${reveal ? 'visible' : ''} phase-${phase}`}
+			role='status'
+			aria-live='polite'
+			onClick={reveal ? endReveal : undefined}
+			data-testid='shuffle-overlay'>
+			<div className='shuffle-stage'>
+				<span className='eyebrow'>
+					<i /> ANGLER RNG · FAIR SHUFFLE
+				</span>
+				<div className='shuffle-dial'>
+					{phase === 'done' ? (
+						<CheckCircledIcon />
+					) : (
+						<strong key={phase === 'spin' ? rolling : dealt}>
+							{phase === 'spin' ? rolling : dealingName}
+						</strong>
+					)}
+				</div>
+				<div className='shuffle-progress'>
+					<span style={{ width: `${Math.round(progress * 100)}%` }} />
+				</div>
+				<div className='shuffle-caption'>
+					<strong>{caption}</strong>
+					<small>
+						{phase === 'spin'
+							? '正在打乱全部钓友顺序'
+							: phase === 'deal'
+								? `已入队 ${dealt} / ${dealOrder.length} 人`
+								: `${teams.length} 支钓队已集结`}
+					</small>
+				</div>
+				<div className='shuffle-teams'>
+					{teams.map((team, teamIndex) => (
+						<div className='shuffle-team' key={team.id}>
+							<span>
+								<i className={`dot dot-${teamIndex}`} />
+								{team.name}
+							</span>
+							<div className='shuffle-slots'>
+								{team.members.map((member, memberIndex) =>
+									memberIndex < revealedByTeam[teamIndex] ? (
+										<b className='shuffle-slot filled' key={member.id}>
+											{member.name}
+										</b>
+									) : (
+										<b className='shuffle-slot pending' key={member.id} />
+									),
+								)}
+							</div>
+						</div>
+					))}
+				</div>
+				<small className='shuffle-hint'>点击任意处跳过</small>
+			</div>
+		</div>
+	);
+}
+
 function ToastView() {
 	const { toast } = useApp();
 	return (
@@ -964,6 +1135,7 @@ export default function Prototype() {
 	return (
 		<AppProvider>
 			<FlowStack initial={shared ? shareScreen : entryScreen} />
+			<ShuffleOverlay />
 		</AppProvider>
 	);
 }
